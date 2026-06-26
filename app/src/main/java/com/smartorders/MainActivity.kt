@@ -44,8 +44,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toggleOverlayService() {
+        // Check permission first
         if (!Settings.canDrawOverlays(this)) {
-            requestOverlayPermission()
+            showOverlayPermissionDialog()
             return
         }
 
@@ -53,15 +54,30 @@ class MainActivity : AppCompatActivity() {
         val isRunning = prefs.getBoolean("overlay_running", false)
 
         if (isRunning) {
+            // Stop the service
             stopService(Intent(this, OverlayService::class.java))
             prefs.edit().putBoolean("overlay_running", false).apply()
             binding.btnToggleOverlay.text = getString(R.string.btn_start_overlay)
             Toast.makeText(this, getString(R.string.overlay_stopped), Toast.LENGTH_SHORT).show()
         } else {
-            startForegroundService(Intent(this, OverlayService::class.java))
-            prefs.edit().putBoolean("overlay_running", true).apply()
-            binding.btnToggleOverlay.text = getString(R.string.btn_stop_overlay)
-            Toast.makeText(this, getString(R.string.overlay_started), Toast.LENGTH_SHORT).show()
+            // Start the service safely
+            try {
+                val serviceIntent = Intent(this, OverlayService::class.java)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(serviceIntent)
+                } else {
+                    startService(serviceIntent)
+                }
+                prefs.edit().putBoolean("overlay_running", true).apply()
+                binding.btnToggleOverlay.text = getString(R.string.btn_stop_overlay)
+                Toast.makeText(this, getString(R.string.overlay_started), Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(this,
+                    "خطأ في تشغيل الخدمة: ${e.message}",
+                    Toast.LENGTH_LONG).show()
+                getSharedPreferences("overlay_prefs", MODE_PRIVATE)
+                    .edit().putBoolean("overlay_running", false).apply()
+            }
         }
     }
 
@@ -72,17 +88,23 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.btn_stop_overlay)
         else
             getString(R.string.btn_start_overlay)
+
+        // Show permission status
+        if (!Settings.canDrawOverlays(this)) {
+            binding.btnToggleOverlay.text = "⚠️ منح الإذن أولاً"
+        }
     }
 
-    private fun requestOverlayPermission() {
+    private fun showOverlayPermissionDialog() {
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.permission_required_title))
-            .setMessage(getString(R.string.permission_required_message))
-            .setPositiveButton(getString(R.string.btn_grant)) { _, _ ->
+            .setMessage("اذهب للإعدادات ← التطبيقات ← Smart Orders ← اسمح بالعرض فوق التطبيقات الأخرى")
+            .setPositiveButton("فتح الإعدادات") { _, _ ->
                 val intent = Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                     Uri.parse("package:$packageName")
                 )
+                @Suppress("DEPRECATION")
                 startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION)
             }
             .setNegativeButton(getString(R.string.btn_cancel), null)
@@ -92,7 +114,11 @@ class MainActivity : AppCompatActivity() {
     private fun openAccessibilitySettings() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         startActivity(intent)
-        Toast.makeText(this, getString(R.string.accessibility_hint), Toast.LENGTH_LONG).show()
+        Toast.makeText(
+            this,
+            "ابحث عن \"Smart Orders\" ← خدمات مثبتة ← فعّلها",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     private fun confirmLogout() {
@@ -116,8 +142,9 @@ class MainActivity : AppCompatActivity() {
         if (requestCode == REQUEST_OVERLAY_PERMISSION) {
             if (Settings.canDrawOverlays(this)) {
                 Toast.makeText(this, getString(R.string.permission_granted), Toast.LENGTH_SHORT).show()
+                updateOverlayButtonState()
             } else {
-                Toast.makeText(this, getString(R.string.permission_denied), Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, getString(R.string.permission_denied), Toast.LENGTH_LONG).show()
             }
         }
     }

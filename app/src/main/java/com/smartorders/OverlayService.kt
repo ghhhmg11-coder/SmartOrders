@@ -9,12 +9,13 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
+import android.provider.Settings
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
-import android.widget.ImageButton
+import android.widget.Toast
 import androidx.core.app.NotificationCompat
 
 class OverlayService : Service() {
@@ -31,8 +32,17 @@ class OverlayService : Service() {
         super.onCreate()
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
+
+        // Must call startForeground within 5 seconds on API 26+
         startForeground(NOTIFICATION_ID, buildNotification())
-        showOverlayButton()
+
+        // Only show overlay if we have permission
+        if (Settings.canDrawOverlays(this)) {
+            showOverlayButton()
+        } else {
+            Toast.makeText(this, "لا يوجد إذن لعرض الزر العائم", Toast.LENGTH_LONG).show()
+            stopSelf()
+        }
     }
 
     private fun createNotificationChannel() {
@@ -48,11 +58,19 @@ class OverlayService : Service() {
     }
 
     private fun buildNotification(): Notification {
+        val openIntent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val openPendingIntent = PendingIntent.getActivity(
+            this, 0, openIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         val stopIntent = Intent(this, OverlayService::class.java).apply {
             action = "STOP"
         }
         val stopPendingIntent = PendingIntent.getService(
-            this, 0, stopIntent,
+            this, 1, stopIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -60,8 +78,10 @@ class OverlayService : Service() {
             .setContentTitle(getString(R.string.app_name))
             .setContentText(getString(R.string.overlay_notification_text))
             .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentIntent(openPendingIntent)
             .addAction(android.R.drawable.ic_delete, getString(R.string.btn_stop_overlay), stopPendingIntent)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setOngoing(true)
             .build()
     }
 
@@ -70,12 +90,13 @@ class OverlayService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
             WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.END
-            x = 16
-            y = 200
+            x = 24
+            y = 300
         }
 
         overlayView = LayoutInflater.from(this).inflate(R.layout.overlay_button, null)
@@ -84,6 +105,7 @@ class OverlayService : Service() {
         var initialY = 0
         var initialTouchX = 0f
         var initialTouchY = 0f
+        var moved = false
 
         overlayView?.setOnTouchListener { _, event ->
             when (event.action) {
@@ -92,27 +114,32 @@ class OverlayService : Service() {
                     initialY = params.y
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
+                    moved = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (initialTouchX - event.rawX).toInt()
-                    params.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(overlayView, params)
+                    val dx = (initialTouchX - event.rawX).toInt()
+                    val dy = (event.rawY - initialTouchY).toInt()
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5) moved = true
+                    params.x = initialX + dx
+                    params.y = initialY + dy
+                    try { windowManager.updateViewLayout(overlayView, params) } catch (_: Exception) {}
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val dx = event.rawX - initialTouchX
-                    val dy = event.rawY - initialTouchY
-                    if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
-                        openMainActivity()
-                    }
+                    if (!moved) openMainActivity()
                     true
                 }
                 else -> false
             }
         }
 
-        windowManager.addView(overlayView, params)
+        try {
+            windowManager.addView(overlayView, params)
+        } catch (e: Exception) {
+            Toast.makeText(this, "فشل عرض الزر: ${e.message}", Toast.LENGTH_LONG).show()
+            stopSelf()
+        }
     }
 
     private fun openMainActivity() {
@@ -133,7 +160,9 @@ class OverlayService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        overlayView?.let { windowManager.removeView(it) }
+        try {
+            overlayView?.let { windowManager.removeView(it) }
+        } catch (_: Exception) {}
         overlayView = null
     }
 
