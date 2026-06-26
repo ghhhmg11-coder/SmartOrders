@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App -->
+    <string name="app_name">Smart Orders</string>
+    <string name="login_subtitle">نظام إدارة الطلبات الذكي</string>
+
+    <!-- Login -->
+    <string name="hint_username">اسم المستخدم</string>
+    <string name="hint_password">كلمة المرور</string>
+    <string name="btn_login">تسجيل الدخول</string>
+    <string name="login_success">مرحباً بك!</string>
+    <string name="error_empty_fields">يرجى ملء جميع الحقول</string>
+    <string name="error_invalid_credentials">اسم المستخدم أو كلمة المرور غير صحيحة</string>
+
+    <!-- Main -->
+    <string name="main_welcome">مرحباً، أدمن</string>
+    <string name="section_overlay">زر العائم</string>
+    <string name="section_overlay_desc">تشغيل أو إيقاف الزر العائم الذي يظهر فوق جميع التطبيقات</string>
+    <string name="section_accessibility">خدمة إمكانية الوصول</string>
+    <string name="section_accessibility_desc">تفعيل خدمة إمكانية الوصول لمراقبة الشاشة والتفاعل مع التطبيقات</string>
+    <string name="btn_start_overlay">تشغيل الزر العائم</string>
+    <string name="btn_stop_overlay">إيقاف الزر العائم</string>
+    <string name="btn_enable_accessibility">تفعيل خدمة إمكانية الوصول</string>
+    <string name="btn_logout">تسجيل الخروج</string>
+    <string name="overlay_started">تم تشغيل الزر العائم</string>
+    <string name="overlay_stopped">تم إيقاف الزر العائم</string>
+
+    <!-- Accessibility Service -->
+    <string name="accessibility_service_label">Smart Orders - خدمة إمكانية الوصول</string>
+    <string name="accessibility_service_description">تتيح هذه الخدمة لتطبيق Smart Orders مراقبة الشاشة والتفاعل مع التطبيقات الأخرى لإدارة الطلبات بكفاءة.</string>
+    <string name="accessibility_service_connected">تم تفعيل خدمة إمكانية الوصول</string>
+    <string name="accessibility_hint">ابحث عن \"Smart Orders\" في قائمة الخدمات وقم بتفعيلها</string>
+
+    <!-- Overlay -->
+    <string name="overlay_fab_desc">Smart Orders</string>
+    <string name="overlay_channel_name">خدمة الزر العائم</string>
+    <string name="overlay_channel_desc">إشعار الخدمة الجارية في الخلفية</string>
+    <string name="overlay_notification_text">الزر العائم يعمل في الخلفية</string>
+
+    <!-- Permissions -->
+    <string name="permission_required_title">إذن مطلوب</string>
+    <string name="permission_required_message">يحتاج التطبيق إلى إذن العرض فوق التطبيقات الأخرى لتشغيل الزر العائم.</string>
+    <string name="permission_granted">تم منح الإذن بنجاح</string>
+    <string name="permission_denied">تم رفض الإذن</string>
+    <string name="btn_grant">منح الإذن</string>
+    <string name="btn_cancel">إلغاء</string>
+    <string name="btn_confirm">تأكيد</string>
+
+    <!-- Logout -->
+    <string name="logout_title">تسجيل الخروج</string>
+    <string name="logout_message">هل تريد تسجيل الخروج؟</string>
+</resources>
